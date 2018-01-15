@@ -1,0 +1,144 @@
+version: '2.1'
+
+services:
+  message-broker-service:
+    container_name: message-broker-service
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    ports:
+      - "5675:5672"  # we forward this port because it's useful for debugging
+      - "15675:15672"  # here, we can access rabbitmq management plugin
+    volumes:
+      - rabbitmq-data:/data/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmq
+      - RABBITMQ_DEFAULT_PASS=rabbitmq
+      - RABBITMQ_DEFAULT_VHOST=base_backend_dev
+  redis-db:
+    container_name: redis-db
+    build:
+      context: ./redis
+      dockerfile: Dockerfile
+    ports:
+      - 6375:6379
+    volumes:
+      - redis-data:/data/redis
+
+  base-db:
+    container_name: base-db
+    build:
+      context: ../express-base-api/db
+      dockerfile: Dockerfile
+    ports:
+      - 5435:5432  # expose ports - HOST:CONTAINER
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/data/postgres
+    healthcheck:
+      test: exit 0
+
+  base-api:
+    container_name: base-api
+    build:
+      context: ../express-base-api
+      dockerfile: Dockerfile
+    volumes:
+      - '../express-base-api:/usr/src/app'
+    ports:
+      - 3001:3000 # expose ports - HOST:CONTAINER
+    environment:
+      - APP_SETTINGS=project.config.DevelopmentConfig
+      - DATABASE_URL=postgres://postgres:postgres@base-db:5432/base_backend_dev
+      - DATABASE_TEST_URL=postgres://postgres:postgres@base-db:5432/base_backend_test
+      - CELERY_BROKER_URL=amqp://rabbitmq:rabbitmq@message-broker-service:5672/base_backend_dev
+      - CELERY_BROKER_TEST_URL=amqp://rabbitmq:rabbitmq@message-broker-service:5672/base_backend_test
+      #- CELERY_RESULT_BACKEND=redis://redis:redis@redis-db:6379
+      - SECRET_KEY=${SECRET_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USE_SSL=${MAIL_USE_SSL}
+      - FCM_SERVER_KEY=${FCM_SERVER_KEY}
+    depends_on:
+      base-db:
+        condition: service_healthy
+    links:
+      - base-db
+      - message-broker-service
+      - redis-db
+
+  nginx:
+    container_name: nginx
+    build: ./nginx/
+    restart: always
+    ports:
+      - 80:80
+    depends_on:
+      base-api:
+        condition: service_started
+    links:
+      - base-api
+
+
+  # celery-worker:
+  #   container_name: celery-worker
+  #   build:
+  #     context: ./..
+  #     dockerfile: /express-base-main/celery/Dockerfile
+  #   links:
+  #     - message-broker-service
+  #     - redis-db
+  #   environment:
+  #     - APP_SETTINGS=project.config.DevelopmentConfig
+  #     - DATABASE_URL=postgres://postgres:postgres@base-db:5432/base_backend_dev
+  #     - DATABASE_TEST_URL=postgres://postgres:postgres@base-db:5432/base_backend_test
+  #     - CELERY_BROKER_URL=amqp://rabbitmq:rabbitmq@message-broker-service:5672/base_backend_dev
+  #     - CELERY_BROKER_TEST_URL=amqp://rabbitmq:rabbitmq@message-broker-service:5672/base_backend_test
+  #     #- CELERY_RESULT_BACKEND=redis://redis:redis@redis-db:6379
+  #     - SECRET_KEY=${SECRET_KEY}
+  #     - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+  #     - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+  #     - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+  #     - MAIL_USERNAME=${MAIL_USERNAME}
+  #     - MAIL_PASSWORD=${MAIL_PASSWORD}
+  #     - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+  #     - MAIL_PORT=${MAIL_PORT}
+  #     - MAIL_SERVER=${MAIL_SERVER}
+  #     - MAIL_USE_TLS=${MAIL_USE_TLS}
+  #     - MAIL_USE_SSL=${MAIL_USE_SSL}
+  #     - FCM_SERVER_KEY=${FCM_SERVER_KEY}
+  #   depends_on:
+  #     message-broker-service:
+  #       condition: service_started
+  #     redis-db:
+  #       condition: service_started
+
+  swagger:
+    container_name: swagger
+    build:
+      dockerfile: Dockerfile
+      context: ../base-swagger
+    ports:
+      - '8080:8080' # expose ports - HOST:CONTAINER
+    environment:
+      - SWAGGER_JSON=swagger.yml
+    depends_on:
+      base-api:
+        condition: service_started
+
+    links:
+      - base-api
+
+volumes:
+  redis-data:
+  postgres-data:
+  rabbitmq-data:
