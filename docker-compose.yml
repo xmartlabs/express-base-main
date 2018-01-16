@@ -46,7 +46,8 @@ services:
       context: ../express-base-api
       dockerfile: Dockerfile
     volumes:
-      - '../express-base-api:/usr/src/app'
+      - ../express-base-api:/usr/src/app
+      - node-modules:/usr/src/app/node_modules
     ports:
       - 3001:3000 # expose ports - HOST:CONTAINER
     environment:
@@ -142,3 +143,4 @@ volumes:
   redis-data:
   postgres-data:
   rabbitmq-data:
+  node-modules:
