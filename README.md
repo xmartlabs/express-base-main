@@ -36,3 +36,23 @@ docker-machine create -d virtualbox <vm_name>
 eval "$(docker-machine env <vm_name>)"
 docker-compose up -d --build
 ```
+
+#### Migrations 
+
+```sh
+docker-compose run base-api node_modules/.bin/sequelize db:drop
+docker-compose run base-api node_modules/.bin/sequelize db:create
+```
+
+```sh
+$ docker-compose run base-api sequelize db:migrate        # Run pending migrations.
+$ docker-compose run base-api sequelize db:migrate:undo   # Revert the last migration run.
+$ docker-compose run base-api sequelize help              # Display this help text.
+$ docker-compose run base-api sequelize migration:create  # Generates a new migration file.
+
+```
+
+```sh
+$ docker-compose run base-api sequelize init              # Initializes the project.
+$ docker-compose run base-api sequelize version           # Prints the version number.
+```
