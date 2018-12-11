@@ -1,6 +1,8 @@
 # Express Base Main
 
 ## Setup
+In order to define all enrironments variables needed dockerUpScriptTemplate.example.sh file should be modified with proper values.
+
 
 ### Dependencies
 
@@ -24,6 +26,8 @@ Clone next repositories in the same container folder:
 2. cd into `express-base-main` folder and run:
   ```sh
   docker-compose up -d --build
+  *If you need to define evironments variables just define them before docker-compose command.
+  Example: SECRET_KEY=RunsWithFries docker-compose up -d --build
   ```
 
 #### Start within VirtualBox (recommended)

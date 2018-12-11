@@ -69,6 +69,10 @@ services:
       - MAIL_USE_TLS=${MAIL_USE_TLS}
       - MAIL_USE_SSL=${MAIL_USE_SSL}
       - FCM_SERVER_KEY=${FCM_SERVER_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - LOGGLY_TOKEN=${LOGGLY_TOKEN}
+      - LOGGLY_SUBDOMAIN=${LOGGLY_SUBDOMAIN}
+      - LOGGLY_TAG=${LOGGLY_TAG}
     depends_on:
       base-db:
         condition: service_healthy
