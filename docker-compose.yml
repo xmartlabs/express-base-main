@@ -129,10 +129,13 @@ services:
     build:
       dockerfile: Dockerfile
       context: ../base-swagger
+    volumes:
+      - ../base-swagger/swagger.yml:/swagger.yml
     ports:
       - '8080:8080' # expose ports - HOST:CONTAINER
     environment:
-      - SWAGGER_JSON=swagger.yml
+      - SWAGGER_JSON=/swagger.yml
+      - VALIDATOR_URL=
     depends_on:
       - base-api
     links:
