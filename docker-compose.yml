@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3.7'
 
 services:
   message-broker-service:
@@ -15,6 +15,7 @@ services:
       - RABBITMQ_DEFAULT_USER=rabbitmq
       - RABBITMQ_DEFAULT_PASS=rabbitmq
       - RABBITMQ_DEFAULT_VHOST=base_backend_dev
+  
   redis-db:
     container_name: redis-db
     build:
@@ -47,7 +48,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ../express-base-api:/usr/src/app
-      - node-modules:/usr/src/app/node_modules
+      - ../express-base-api/node_modules:/usr/src/app/node_modules
     ports:
       - 3001:3000 # expose ports - HOST:CONTAINER
     environment:
@@ -74,8 +75,7 @@ services:
       - LOGGLY_SUBDOMAIN=${LOGGLY_SUBDOMAIN}
       - LOGGLY_TAG=${LOGGLY_TAG}
     depends_on:
-      base-db:
-        condition: service_healthy
+      - base-db
     links:
       - base-db
       - message-broker-service
@@ -88,8 +88,7 @@ services:
     ports:
       - 80:80
     depends_on:
-      base-api:
-        condition: service_started
+      - base-api
     links:
       - base-api
 
@@ -122,10 +121,8 @@ services:
   #     - MAIL_USE_SSL=${MAIL_USE_SSL}
   #     - FCM_SERVER_KEY=${FCM_SERVER_KEY}
   #   depends_on:
-  #     message-broker-service:
-  #       condition: service_started
-  #     redis-db:
-  #       condition: service_started
+  #     - message-broker-service
+  #     - redis-db
 
   swagger:
     container_name: swagger
@@ -137,9 +134,7 @@ services:
     environment:
       - SWAGGER_JSON=swagger.yml
     depends_on:
-      base-api:
-        condition: service_started
-
+      - base-api
     links:
       - base-api
 
@@ -147,4 +142,3 @@ volumes:
   redis-data:
   postgres-data:
   rabbitmq-data:
-  node-modules:
